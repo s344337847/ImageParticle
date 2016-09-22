@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script type="text/javascript">
+    var ctx;
+    var image_ = new Image();
+    // 350 x 219
+    image_.src="timg.jpeg";
+    var particle_s = [];
+    // 粒子运动时间 0<frame<=1
+    var frame = 0;
+
+        function init(){
+            var c =document.getElementById("mycanvans");
+            ctx = c.getContext("2d")
+            showImage(0,0);
+            initParticle();
+        }
+
+        /** Image Show **/
+        function showImage(x,y){
+            ctx.drawImage(image_,x,y);
+        }
+
+        /** load Particles **/
+        function initParticle(){
+            var imgData=ctx.getImageData(0,0,350,219);
+            var x = 100;
+            var y = 100;
+            var color;
+            for(var i=0;i<imgData.data.length;i+=4){
+                x+=1;
+                if((i/4)%350 == 0){
+                    y+=1;
+                    x=100;
+                }
+                color = "rgb("+ imgData.data[i]+","+imgData.data[i+1]+","+imgData.data[i+2]+")";
+                var p = new Particles(x,y,color,getRandomControlX(),getRandomControlY());
+                particle_s.push(p);
+            }
+            animate();
+        }
+
+        // 随机生成贝赛曲线控制点的Y值
+        function getRandomControlX() {
+            var temp = Math.random()*100;
+            if(temp >=50){
+                return -1*Math.random()*2000;
+            }
+            return Math.random()*2000;
+        }
+
+        // 随机生成贝赛曲线控制点的Y值
+        function getRandomControlY() {
+            return Math.random()*1800;
+        }
+
+        /** Particles **/
+        // x endx ,y endY,color 颜色 controlx 控制点x
+        function Particles(x,y,color,controlx,controly) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.controlx = controlx;
+            this.controly = controly;
+        }
+
+        /** 显示粒子 **/
+        function drawParticles(x,y,color,controlx,controly){
+            var mx = PointOnCubicBezier(0,controlx,x,frame);
+            var my = PointOnCubicBezier(0,controly,y,frame);
+            ctx.fillStyle = color;
+            ctx.fillRect(mx,my,1,1);
+        }
+
+        // 清除画布
+        function clearCanvans(){
+            ctx.fillStyle="black";
+            ctx.fillRect(0,0,1000,1000);
+        }
+
+        // P0 start Point , P1 control Point ,P2 end point
+        // 二次曲线坐标点计算公式
+        // B(t) = (1-t)^2*Po + 2t(1-t)P1 + t^2P2;
+        // 三次曲线坐标点计算公式
+        // B(t) = (1-t)^3*Po + 3P1*t(1-t)^2 + 3P2t^2(1-t)+P3t^3;
+        function PointOnCubicBezier(p0,p1,p2,t){
+            var position = Math.pow(2,(1-t))*p0 + 2*t*(1-t)*p1 + Math.pow(2,t)*p2;
+            return position;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(frame<=1){
+                clearCanvans();
+                frame +=0.04;
+                for(var i =0;i<particle_s.length;i++){
+                    var p = particle_s[i];
+                    drawParticles(p.x,p.y,p.color,p.controlx,p.controly);
+                }
+            }
+        }
+    </script>
+</head>
+<body onload="init();">
+<canvas width="2000" height="2000" id="mycanvans"></canvas>
+</body>
+</html>
