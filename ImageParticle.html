@@ -10,69 +10,57 @@
     var image_ = new Image();
     // 350 x 219
     image_.src="timg.jpeg";
-    var particle_s = [];
-    // 粒子运动时间 0<frame<=1
+    var particle_s = [];// 保存粒子
     var frame = 0;
 
         function init(){
             var c =document.getElementById("mycanvans");
-            ctx = c.getContext("2d")
-            showImage(0,0);
+            ctx = c.getContext('2d');
+            ctx.drawImage(image_,0,0);
             initParticle();
         }
-
-        /** Image Show **/
-        function showImage(x,y){
-            ctx.drawImage(image_,x,y);
-        }
-
         /** load Particles **/
         function initParticle(){
+            // 获取图片矩形的像素数据，使用putImageData将图像数据放回画布
             var imgData=ctx.getImageData(0,0,350,219);
             var x = 100;
             var y = 100;
-            var color;
             for(var i=0;i<imgData.data.length;i+=4){
                 x+=1;
+                // 获取每个像素数据的X，Y，坐标，然后实例Particles 并保存到particle_s数组中。
                 if((i/4)%350 == 0){
                     y+=1;
                     x=100;
                 }
-                color = "rgb("+ imgData.data[i]+","+imgData.data[i+1]+","+imgData.data[i+2]+")";
-                var p = new Particles(x,y,color,getRandomControlX(),getRandomControlY());
+                // 这里不加载全部粒子，那样太多了。
+                if(i%2==0){
+                var color = "rgb("+ imgData.data[i]+","+imgData.data[i+1]+","+imgData.data[i+2]+")";
+                var p = new Particles(x,y,color,getRandomStartTime(),0);
                 particle_s.push(p);
+                }
             }
             animate();
         }
 
-        // 随机生成贝赛曲线控制点的Y值
-        function getRandomControlX() {
-            var temp = Math.random()*100;
-            if(temp >=50){
-                return -1*Math.random()*2000;
-            }
-            return Math.random()*2000;
-        }
-
-        // 随机生成贝赛曲线控制点的Y值
-        function getRandomControlY() {
-            return Math.random()*1800;
+        // 随机生成每个粒子启动时间
+        function getRandomStartTime() {
+            return Math.random()*1;
         }
 
         /** Particles **/
-        // x endx ,y endY,color 颜色 controlx 控制点x
-        function Particles(x,y,color,controlx,controly) {
+        // x endx ,y endY,color 开始时间 t 运动时间
+        function Particles(x,y,color,starttime,t) {
             this.x = x;
             this.y = y;
             this.color = color;
-            this.controlx = controlx;
-            this.controly = controly;
+            this.starttime = starttime;
+            this.t = t;
         }
 
         /** 显示粒子 **/
-        function drawParticles(x,y,color,controlx,controly){
-            var mx = PointOnCubicBezier(0,controlx,x,frame);
-            var my = PointOnCubicBezier(0,controly,y,frame);
+        function drawParticles(x,y,color,t){
+            var mx = PointOnCubicBezier(0,300,x,t);
+            var my = PointOnCubicBezier(0,-100,y,t);
             ctx.fillStyle = color;
             ctx.fillRect(mx,my,1,1);
         }
@@ -95,18 +83,24 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if(frame<=1){
                 clearCanvans();
-                frame +=0.04;
+                frame +=0.01;
                 for(var i =0;i<particle_s.length;i++){
                     var p = particle_s[i];
-                    drawParticles(p.x,p.y,p.color,p.controlx,p.controly);
+                    // 当时间大于粒子启动时间的时候启动粒子
+                    if(frame>=p.starttime){
+                        if(p.t<=1){
+                            p.t+= 0.04
+                            drawParticles(p.x,p.y,p.color,p.t);
+                        }else{
+                            drawParticles(p.x,p.y,p.color,1);
+                        }
+                    }
                 }
-            }
         }
     </script>
 </head>
 <body onload="init();">
-<canvas width="2000" height="2000" id="mycanvans"></canvas>
+<canvas width="2000" height="1000" id="mycanvans"></canvas>
 </body>
 </html>
